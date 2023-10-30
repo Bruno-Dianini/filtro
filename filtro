@@ -1,66 +1,42 @@
-trigger:
-- main
+steps:
+- checkout: self
 
-pool:
-  vmImage: 'ubuntu-latest'
+- script: |
+    diretorio=$PWD
 
-jobs:
-- job: CheckFilesAndRunTasks
-  displayName: 'Verificar Arquivos e Publicar Arquivos Filtrados'
+    extensoes=( ".cs" ".java" ".zip" ".ear" ".war" ".sar" ".apk" ".nupkg" ".tar"
+    ".gz" ".tgz" ".bz2" ".tbz2" ".rpm" ".exe" ".dll" ".jar" ".war" "package.json" ".nuspec")
 
-  steps:
-  - checkout: self
+    destino=$PWD/ArquivosFiltrados
 
-  - script: |
-      #!/bin/bash
+    mkdir -p $destino
 
-      # Define o diretório a ser verificado (neste caso, o diretório do repositório)
-      diretorio=$PWD
+    for ext in "${extensoes[@]}"; do
+        arquivos=$(find "$diretorio" -type f -name "*$ext")
 
-      # Define um array de extensões de arquivo a serem procuradas
-      extensoes=( ".cs" ".java" ".zip" ".ear" ".war" ".sar" ".apk" ".nupkg" ".tar" 
-      ".gz" ".tgz" ".bz2" ".tbz2" ".rpm" ".exe" ".dll" ".jar" ".war" "package.json" ".nuspec")
+        if [ -n "$arquivos" ]; then
+            echo "Encontrados arquivos com a extensão $ext: $arquivos"
+        fi
+    done
 
-      # Define o diretório de destino para mover os arquivos filtrados
-      destino=$PWD/ArquivosFiltrados
+  displayName: 'Verificar Extensões de Arquivo'
 
-      # Crie o diretório de destino se ele não existir
-      mkdir -p $destino
+- task: CopyFiles@2
+  inputs:
+    SourceFolder: '$(Build.SourcesDirectory)'
+    Contents: '**'  # Isso copiará todos os arquivos, você pode ajustar os padrões conforme necessário
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
-      # Use o comando find para procurar arquivos com as extensões especificadas em todo o diretório
-      for ext in "${extensoes[@]}"; do
-          arquivos=$(find "$diretorio" -type f -name "*$ext")
+  displayName: 'Copiar Artefatos para Diretório de Artefatos'
 
-          if [ -n "$arquivos" ]; then
-              echo "Encontrados arquivos com a extensão $ext: $arquivos"
-              
-              # Mover arquivos filtrados para o diretório de destino
-              mv $arquivos $destino
-          fi
-      done
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'ArquivosFiltrados'
+    publishLocation: 'Container'
+  condition: succeededOrFailed()
 
-    displayName: 'Verificar Extensões de Arquivo e Mover para Diretório de Destino'
-
-  - script: |
-      # Verificar se o diretório de destino está vazio
-      if [ -z "$(ls -A $destino)" ]; then
-          echo "Nenhum arquivo encontrado. Publicando normalmente..."
-      else
-          echo "Arquivos encontrados. Publicando apenas arquivos filtrados..."
-          echo "Lista de arquivos filtrados:"
-          ls -R $destino
-      fi
-
-    displayName: 'Verificar Se Arquivos Foram Encontrados'
-
-  - task: PublishBuildArtifacts@1
-    inputs:
-      PathtoPublish: '$(Build.SourcesDirectory)/ArquivosFiltrados'
-      ArtifactName: 'ArquivosFiltrados'
-      publishLocation: 'Container'
-    condition: succeededOrFailed()
-      
-    displayName: 'Publicar Arquivos Filtrados'
+  displayName: 'Publicar Artefatos'
 
 
 ////
