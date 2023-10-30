@@ -24,6 +24,8 @@ steps:
 - task: CopyFiles@2
   inputs:
     SourceFolder: '$(Build.SourcesDirectory)'
+
+
     Contents: '**'  # Isso copiará todos os arquivos, você pode ajustar os padrões conforme necessário
     TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
@@ -62,6 +64,96 @@ jobs:
       ".gz" ".tgz" ".bz2" ".tbz2" ".rpm" ".exe" ".dll" ".jar" ".war" "package.json" ".nuspec")
 
       destino=$PWD/ArquivosFiltrados
+
+      mkdir -p $destino
+
+      for ext in "${extensoes[@]}"; do
+          arquivos=$(find "$diretorio" -type f -name "*$ext")
+
+          if [ -n "$arquivos" ]; then
+              echo "Encontrados arquivos com a extensão $ext: $arquivos"
+              mv $arquivos $destino
+          fi
+      done
+
+    displayName: 'Verificar Extensões de Arquivo e Mover para Diretório de Destino'
+
+  - script: |
+      # Verificar se o diretório de destino está vazio
+      if [ -z "$(ls -A $destino)" ]; then
+          echo "Nenhum arquivo encontrado. Publicando normalmente..."
+      else
+          echo "Arquivos encontrados. Publicando apenas arquivos filtrados..."
+          echo "Lista de arquivos filtrados:"
+          ls -R $destino
+      fi
+
+    displayName: 'Verificar Se Arquivos Foram Encontrados'
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      PathtoPublish: '$(Build.SourcesDirectory)/ArquivosFiltrados'
+      ArtifactName: 'ArquivosFiltrados'
+      publishLocation: 'Container'
+    condition: succeededOrFailed()
+      
+    displayName: 'Publicar Arquivos Filtrados'
+-----------------------------------------------
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+jobs:
+- job: CheckFilesAndCopyArtifacts
+  displayName: 'Verificar Arquivos e Mover Artefatos'
+
+  steps:
+  - checkout: self
+
+  - task: CopyFiles@2
+    inputs:
+      SourceFolder: '$(Build.SourcesDirectory)'
+      Contents: '**'  # Isso copiará todos os arquivos
+      TargetFolder: '$(Build.ArtifactStagingDirectory)'
+
+    displayName: 'Copiar Artefatos para Diretório de Artefatos'
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+      ArtifactName: 'ArquivosFiltrados'
+      publishLocation: 'Container'
+    condition: succeededOrFailed()
+
+    displayName: 'Publicar Artefatos'
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+jobs:
+- job: CheckFilesAndRunTasks
+  displayName: 'Verificar Arquivos e Publicar Arquivos Filtrados'
+  
+  steps:    
+  - checkout: self
+
+  - script: |
+      # Definir variáveis de ambiente
+      diretorio=$(Build.SourcesDirectory)
+      extensoes=( ".cs" ".java" ".zip" ".ear" ".war" ".sar" ".apk" ".nupkg" ".tar" ".gz" ".tgz" ".bz2" ".tbz2" ".rpm" ".exe" ".dll" ".jar" ".war" "package.json" ".nuspec")
+      destino=$(Build.SourcesDirectory)/ArquivosFiltrados
 
       mkdir -p $destino
 
