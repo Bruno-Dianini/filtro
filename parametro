@@ -1,0 +1,22 @@
+parameters:
+- name: diretorio
+  displayName: 'Diretório a ser verificado'
+  type: string
+  default: '$(Build.SourcesDirectory)'
+- name: extensoes
+  displayName: 'Extensões de arquivo a serem procuradas'
+  type: object
+  default: [".cs", ".java", ".zip", ".ear", ".war", ".sar", ".apk", ".nupkg", ".tar", ".gz", ".tgz", ".bz2", ".tbz2", ".rpm", ".exe", ".dll", ".jar", ".war", "package.json", ".nuspec"]
+- name: destino
+  displayName: 'Diretório de destino'
+  type: string
+  default: '$(Build.SourcesDirectory)/ArquivosFiltrados'
+
+///
+
+- script: |
+    diretorio=$(parameters.diretorio)
+    extensoes=($(parameters.extensoes))
+    destino=$(parameters.destino)
+    # Resto do script
+  displayName: 'Verificar Extensões de Arquivo e Mover para Diretório de Destino'
