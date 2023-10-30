@@ -1,0 +1,63 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+jobs:
+- job: CheckFilesAndRunTasks
+  displayName: 'Verificar Arquivos e Publicar Arquivos Filtrados'
+
+  steps:
+  - checkout: self
+
+  - script: |
+      #!/bin/bash
+
+      # Define o diretório a ser verificado (neste caso, o diretório do repositório)
+      diretorio=$PWD
+
+      # Define um array de extensões de arquivo a serem procuradas
+      extensoes=( ".cs" ".java" ".zip" ".ear" ".war" ".sar" ".apk" ".nupkg" ".tar" 
+      ".gz" ".tgz" ".bz2" ".tbz2" ".rpm" ".exe" ".dll" ".jar" ".war" "package.json" ".nuspec")
+
+      # Define o diretório de destino para mover os arquivos filtrados
+      destino=$PWD/ArquivosFiltrados
+
+      # Crie o diretório de destino se ele não existir
+      mkdir -p $destino
+
+      # Use o comando find para procurar arquivos com as extensões especificadas em todo o diretório
+      for ext in "${extensoes[@]}"; do
+          arquivos=$(find "$diretorio" -type f -name "*$ext")
+
+          if [ -n "$arquivos" ]; then
+              echo "Encontrados arquivos com a extensão $ext: $arquivos"
+              
+              # Mover arquivos filtrados para o diretório de destino
+              mv $arquivos $destino
+          fi
+      done
+
+    displayName: 'Verificar Extensões de Arquivo e Mover para Diretório de Destino'
+
+  - script: |
+      # Verificar se o diretório de destino está vazio
+      if [ -z "$(ls -A $destino)" ]; then
+          echo "Nenhum arquivo encontrado. Publicando normalmente..."
+      else
+          echo "Arquivos encontrados. Publicando apenas arquivos filtrados..."
+          echo "Lista de arquivos filtrados:"
+          ls -R $destino
+      fi
+
+    displayName: 'Verificar Se Arquivos Foram Encontrados'
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      PathtoPublish: '$(Build.SourcesDirectory)/ArquivosFiltrados'
+      ArtifactName: 'ArquivosFiltrados'
+      publishLocation: 'Container'
+    condition: succeededOrFailed()
+      
+    displayName: 'Publicar Arquivos Filtrados'
