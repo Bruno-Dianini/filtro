@@ -100,4 +100,34 @@ jobs:
     condition: succeededOrFailed()
       
     displayName: 'Publicar Arquivos Filtrados'
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+
+steps:
+- task: CopyFiles@2
+  inputs:
+    SourceFolder: '$(Build.SourcesDirectory)'
+    Contents: '**/*.jar'
+    TargetFolder: '$(Build.BinariesDirectory)'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.BinariesDirectory)'
+    ArtifactName: 'output'
+    publishLocation: 'Container'
+- script: |
+    ls -R $(Build.BinariesDirectory)
+  displayName: 'List Files in Binaries Directory'
+
+
+/////////////////////////////////////////////////////////////////////////////////////
+
 
