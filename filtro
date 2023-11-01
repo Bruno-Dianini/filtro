@@ -2,35 +2,23 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 
-trigger:
-- main
-
-pool:
-  vmImage: 'ubuntu-latest'
-
-jobs:
-- job: CheckFilesAndRunTasks
-  displayName: 'Verificar Arquivos e Publicar Arquivos Filtrados'
-  
-  steps:    
+  steps:
   - checkout: self
 
   - script: |
-      diretorio=$PWD
-
       extensoes=( ".cs" ".java" ".zip" ".ear" ".war" ".sar" ".apk" ".nupkg" ".tar" 
-      ".gz" ".tgz" ".bz2" ".tbz2" ".rpm" ".exe" ".dll" ".jar" ".war" "package.json" ".nuspec")
+      ".gz" ".tgz" ".bz2" ".py" ".tbz2" ".rpm" ".exe" ".dll" ".jar" ".war" "package.json" ".nuspec")
 
-      destino=$PWD/ArquivosFiltrados
+      destino=$(Build.SourcesDirectory)/ArquivosFiltrados
 
       mkdir -p $destino
 
       for ext in "${extensoes[@]}"; do
-          arquivos=$(find "$diretorio" -type f -name "*$ext")
+          arquivos=$(find "$(Build.SourcesDirectory)" -type f -name "*$ext")
 
           if [ -n "$arquivos" ]; then
               echo "Encontrados arquivos com a extensão $ext: $arquivos"
-              mv $arquivos $destino
+              cp $arquivos $destino
           fi
       done
 
