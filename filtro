@@ -130,4 +130,33 @@ steps:
 
 /////////////////////////////////////////////////////////////////////////////////////
 
+jobs:
+- job: CopyFiles
+  displayName: 'Copiar Arquivos de Build'
+  steps:
+  - checkout: self
 
+  - script: |
+      extensoes=( ".cs" ".java" ".zip" ".ear" ".war" ".sar" ".apk" ".nupkg" ".tar" 
+      ".gz" ".tgz" ".bz2" ".py" ".tbz2" ".rpm" ".exe" ".dll" ".jar" ".war" "package.json" ".nuspec")
+
+      destino=$(Build.ArtifactStagingDirectory)/ArquivosFiltrados
+
+      mkdir -p $destino
+
+      for ext in "${extensoes[@]}"; do
+          arquivos=$(find "$(Build.SourcesDirectory)" -type f -name "*$ext")
+
+          if [ -n "$arquivos" ]; then
+              echo "Encontrados arquivos com a extensão $ext: $arquivos"
+              cp $arquivos $destino
+          fi
+      done
+    displayName: 'Copiar Arquivos com Extensões Específicas'
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)/ArquivosFiltrados'
+      ArtifactName: 'ArquivosFiltrados'
+      publishLocation: 'Container'
+    displayName: 'Publicar Arquivos Filtrados'
